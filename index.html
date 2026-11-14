@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>人生画布</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%2316181d'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23e0a458'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./src/styles.css">
+</head>
+<body>
+
+<!-- 解锁界面（AD-06：加密默认开） -->
+<div id="gate" class="gate" hidden>
+  <div class="gate-card">
+    <div class="gate-brand"><span class="dot"></span><span data-i18n="app.name"></span></div>
+    <h1 id="gateTitle">设置主密码</h1>
+    <p class="gate-sub" id="gateSub">你的记录只存在这台设备上。主密码不上传、不保存，忘记无法恢复 —— 建议导出备份。</p>
+    <input type="password" id="gatePw" placeholder="主密码" data-i18n-placeholder="crypto.masterPassword" autocomplete="current-password">
+    <input type="password" id="gatePw2" placeholder="再输一次" data-i18n-placeholder="crypto.enterAgain" autocomplete="new-password">
+    <div class="gate-err" id="gateErr"></div>
+    <button class="gate-btn" id="gateOk">创建并进入</button>
+    <button class="gate-link" id="gateNoCrypto" data-i18n="crypto.skipForNow">先不加密，直接用</button>
+    <p class="gate-warn" data-i18n="crypto.protectionBoundary">能防的是：设备丢失、磁盘被翻、别人打开浏览器。不能防：已解锁状态下的键盘记录、恶意插件。</p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <div class="brand"><span class="dot"></span><span data-i18n="app.name"></span> <small id="lockState" title=""></small></div>
+    <div class="seg" id="seg">
+      <button data-v="today" class="on" data-i18n="view.today">今日</button>
+      <button data-v="canvas" data-i18n="view.canvas">画布</button>
+      <button data-v="tl" data-i18n="view.timeline">时间轴</button>
+      <button data-v="lv" data-i18n="view.list">列表</button>
+      <button data-v="wk" data-i18n="view.weekCalendar">周历</button>
+    </div>
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="搜索点、内容、标签、修改原因…（试试「换工作」）" data-i18n-placeholder="search.placeholder">
+      <span class="cnt"><b id="qcnt"></b><span class="tgl on" id="ctxT" title="命中后带出一跳关系上下文" data-i18n="search.relationContext" data-i18n-title="search.pullOneHop">关系上下文</span></span>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn" id="btnFilter" title="按状态、标签、时间筛选" data-i18n-title="filter.byStatusTagTime"><span data-i18n="filter.title">筛选</span><span class="badge" id="filterBadge" hidden>0</span></button>
+      <button class="btn" id="btnFocus" title="缩放平移到结果" data-i18n-title="search.zoomToResult"><span data-i18n="action.focus">聚焦</span></button>
+      <button class="btn" id="btnExport" data-i18n="action.export">导出</button>
+      <!-- 导入独立成入口：原来它藏在「导出」菜单里，菜单叫导出、里面塞着导入，
+           找的人根本想不到；原生模式下整个顶栏还会被隐藏（--hd 归零），
+           结果就是「设置」和「导入」两个入口一起消失。 -->
+      <button class="btn" id="btnImport" title="导入 JSON（覆盖当前全部数据）" data-i18n-title="import.overwriteAll"><span data-i18n="action.import">导入</span></button>
+      <button class="btn" id="btnKeys" title="快捷键（?）" data-i18n-title="help.shortcutsQuestion"><span data-i18n="help.shortcuts">快捷键</span></button>
+      <button class="btn" id="btnSettings" data-i18n="action.settings">设置</button>
+      <button class="btn acc" id="btnNew" data-i18n="action.recordButton">＋ 记录</button>
+    </div>
+  </header>
+
+  <aside id="left">
+    <!-- 主题 / 阶段这一整块在周画布里不参与（不能新建、不能聚焦、也不画框）——
+         周画布是"这一周的复盘"，不是主画布那张主题地图。 -->
+    <div class="sec" id="secAreas">
+      <div class="crumb" id="crumb"></div>
+      <div class="sec-t"><span data-i18n="field.theme">主题</span> <span class="n" id="themeCount"></span></div>
+      <div class="tree" id="treeTheme"></div>
+      <div class="sec-t" style="margin-top:14px"><span data-i18n="field.stage">阶段</span> <span class="n" id="stageCount"></span></div>
+      <div class="tree" id="treeStage"></div>
+      <div class="tree-act">
+        <button class="mini" id="btnAddTheme" data-i18n="theme.createButton">＋ 新建主题</button>
+        <button class="mini" id="btnAddStage" data-i18n="stage.createButton">＋ 新建阶段</button>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-t"><span data-i18n="field.nodeType">点类型</span> <span class="n" data-i18n="filter.title">筛选</span></div>
+      <div class="legend" id="lgType"></div>
+      <div class="sec-t" style="margin-top:14px"><span data-i18n="field.edgeType">连线类型</span> <span class="n" data-i18n="help.dragDot">拖点右侧圆点</span></div>
+      <div class="legend" id="lgEdge"></div>
+    </div>
+    <div class="sec hintsec">
+      <div class="sec-t" style="margin-bottom:8px" data-i18n="filter.current">当前筛选</div>
+      <div id="filterSummary" class="hint">未筛选。搜索在筛选范围内进行。</div>
+      <div class="hint" style="margin-top:12px" data-i18n-html="hint.canvasShortcuts">
+        双击空白新建 · 拖圆点连线 · `/` 搜索 · `Del` 删除<br>
+        连线标签在缩放 &gt; 60% 后显示
+      </div>
+      <div class="perf" id="perf">—</div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- 初始显隐要和 App 的初始视图一致（today），否则首帧会闪一下空画布。
+         App.render() 每次都会按 this.view 重新对齐，这里只是让首帧就正确。 -->
+    <div class="view" id="vCanvas" hidden><canvas id="cv" tabindex="0" aria-label="人生画布，可用方向键选择点，Enter 打开详情" data-i18n-aria-label="canvas.ariaLabel"></canvas>
+      <div class="overlay-state" id="canvasEmpty" hidden></div>
+      <!-- 空间指示条 + 周画布工具条。
+           空间切换器常驻：它是"我在哪、怎么去别处"的唯一入口 ——
+           没有它的话，进了周画布就找不到回主画布的路。 -->
+      <div class="space-bar" id="spaceBar">
+        <button class="btn ghost sp-switch" id="spaceSwitch" title="切换空间" data-i18n-title="action.switchSpace">人生画布 ▾</button>
+        <div class="space-menu" id="spaceMenu" hidden></div>
+        <span class="sp-sep"></span>
+        <button class="btn ghost" id="wkReview" hidden title="记一条这一周的复盘" data-i18n-title="week.writeReview" data-i18n="today.writeReview">记一条复盘</button>
+        <button class="btn ghost" id="wkImport" hidden title="把主画布上这一周的原数据引进来" data-i18n-title="week.pullInFromMainCanvas" data-i18n="week.pullInWeekData">引入本周原数据</button>
+        <button class="btn ghost" id="wkCard" hidden title="把这一周挑几个点排成一张复盘卡片" data-i18n-title="card.pickNodes" data-i18n="card.generate">生成复盘卡片</button>
+        <button class="btn ghost" id="spaceCal" title="打开周历" data-i18n-title="week.openCalendar" data-i18n="view.weekCalendar">周历</button>
+        <button class="btn ghost" id="spaceBack" hidden title="回到主画布" data-i18n-title="week.backToMainCanvas" data-i18n="week.backToMainCanvas">回到主画布</button>
+      </div>
+      <div class="search-banner" id="noHit" hidden></div>
+      <div class="kbd-hint" id="kbdHint"></div>
+      <div class="zbar">
+        <button id="zOut" title="缩小" data-i18n-title="canvas.zoomOut">−</button><span class="zv" id="zv">100%</span>
+        <button id="zIn" title="放大" data-i18n-title="canvas.zoomIn">＋</button>
+        <button id="zFit" title="全览" data-i18n-title="action.fitAll">⤢</button>
+        <span class="zsep"></span>
+        <!-- 重置：把画布恢复成"什么都没挑"的样子。
+             放在画布里而不是顶栏，是因为原生模式顶栏整个被隐藏了
+             （html[data-native-shell] header{display:none}）——
+             放顶栏的入口在桌面端会直接消失。 -->
+        <button id="zReset" class="zreset" title="重置画布：清掉焦点 / 筛选 / 搜索 / 选中，回到全局视角（数据不动）" data-i18n-title="action.resetCanvasExplain" data-i18n="action.reset">↺ 重置</button>
+      </div>
+      <canvas class="minimap" id="mm" width="368" height="240"></canvas>
+    </div>
+    <div class="view" id="vTl" hidden></div>
+    <div class="view" id="vLv" hidden></div>
+    <div class="view" id="vWk" hidden></div>
+    <div class="view" id="vToday"></div>
+    <div class="view" id="vDetail" hidden></div>
+    <!-- 窄屏抽屉开关。只在对应断点下由 CSS 显示，宽屏是死元素 -->
+    <!-- 不要加 hidden 属性：UA 的 [hidden]{display:none} 会把窄屏下的
+         #tgLeft/#tgRight{display:flex} 一起压掉，开关永远出不来（实测）。
+         宽屏隐藏由 .rail-tg{display:none} 负责，断点里再放开。 -->
+    <button class="rail-tg" id="tgLeft" title="主题 / 阶段" data-i18n-title="field.themeStage">☰</button>
+    <button class="rail-tg right" id="tgRight" title="检视面板" data-i18n-title="panel.inspector">◧</button>
+    <div class="toast" id="toast"></div>
+  </main>
+
+  <aside id="right"></aside>
+
+  <!-- 左右分隔条：拖着调侧栏宽度，拖到屏幕边上侧栏就收起 → 画布占满整宽。
+       放在 #app 末尾（绝对定位，位置由 JS 按面板实际边缘算，不靠 CSS 变量猜）。 -->
+  <div id="splitL" class="split split-l" role="separator" aria-orientation="vertical"
+       tabindex="0" aria-label="左栏宽度（左右方向键微调，双击收起）" data-i18n-aria-label="panel.leftWidth"
+       aria-valuemin="0" aria-valuemax="560" aria-valuenow="252"></div>
+  <div id="splitR" class="split split-r" role="separator" aria-orientation="vertical"
+       tabindex="0" aria-label="右栏宽度（左右方向键微调，双击收起）" data-i18n-aria-label="panel.rightWidth"
+       aria-valuemin="0" aria-valuemax="560" aria-valuenow="344"></div>
+</div>
+
+<div class="onboard" id="onboard" hidden>
+  <div class="onboard-card">
+    <div class="onboard-dots" id="onboardDots"></div>
+    <h2 id="onboardTitle"></h2>
+    <p id="onboardBody"></p>
+    <div class="onboard-demo" id="onboardDemo"></div>
+    <div class="onboard-acts">
+      <button class="btn" id="onboardSkip" data-i18n="action.skip">跳过</button>
+      <button class="btn acc" id="onboardNext"></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden><div class="modal-card" id="modalCard"></div></div>
+
+<script type="module" src="./src/main.ts"></script>
+</body>
+</html>

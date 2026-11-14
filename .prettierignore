@@ -1,0 +1,7 @@
+dist
+node_modules
+macos/.build
+shots
+promo
+package-lock.json
+*.md

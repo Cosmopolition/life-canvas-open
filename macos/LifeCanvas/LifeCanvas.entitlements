@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App Sandbox：必须开，App Store 强校验；本地开发也能用同一份 -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- ⚠️ network.client 必须为 true，哪怕这个应用一个网络请求都不发。
+         WebKit 把 app:// 的取数交给了独立的 NetworkProcess XPC 服务，那边
+         没有 outbound 权限就什么都取不到：页面永远停在 about:blank，
+         evaluateJavaScript 全部返回 Code=5，没有任何可见报错。
+         实测：sandbox+network.client=false → 0/26 断言通过；改成 true → 26/26。
+         这只是让 WebKit 自身能工作，代码里没有任何外发路径。 -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <false/>
+
+    <!-- 用户主动导出时打开保存面板；其余时间不读不写用户文件 -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- 不在 App Store 上架之前可手动注释；本地跑不需要读/写证书 -->
+    <key>com.apple.security.print</key>
+    <false/>
+</dict>
+</plist>

@@ -1,0 +1,33 @@
+{
+  "name": "life-canvas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "i18n": "tsx scripts/i18n-check.ts",
+    "i18n:native": "tsx scripts/check-native-i18n.ts",
+    "i18n:slugs": "tsx tools/check-i18n-slugs.ts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "dexie": "^4.0.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^26.6.5",
+    "eslint": "^9.39.5",
+    "prettier": "^3.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

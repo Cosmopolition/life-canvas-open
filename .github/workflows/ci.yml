@@ -1,0 +1,168 @@
+# CI —— 公开仓库的第一道门。
+#
+# 两个 job：
+#   web    —— 类型检查 / lint / 单元测试 / 文案体检 / 构建（Linux，快，先跑）
+#   macos  —— 打包 .app + 跑原生自测（慢，但这是本项目的核心）
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# CI 只需要读代码，不写回仓库。
+permissions:
+  contents: read
+
+# 同一个分支 / 同一个 PR 的新 push 取消掉旧运行。
+# macOS runner 按分钟计费，取消旧运行省的就是分钟数。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: web · 类型检查 / 测试 / 文案 / 构建
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖 (npm ci)
+        run: npm ci
+
+      - name: 类型检查 (tsc --noEmit)
+        run: npm run typecheck
+
+      - name: Lint (eslint)
+        run: npm run lint
+
+      - name: 单元测试 (vitest run)
+        run: npm test
+
+      - name: 文案表体检 (i18n 漏翻检查)
+        run: npm run i18n
+
+      - name: 原生 / web 文案表核对
+        run: npm run i18n:native
+
+      - name: 构建产物 (vite build)
+        run: npm run build
+
+  macos:
+    name: macos · 打包 .app / 原生自测
+    # ⚠️ 必须是 Apple Silicon：macos/build.sh 里 swiftc 写死了
+    #    `-target arm64-apple-macos13.0`，Intel 镜像上编不出来。
+    #    macos-latest 现在解析到 arm64 镜像；万一哪天别名漂到 Intel 上，
+    #    就把它钉成显式版本（macos-15 / macos-26）。
+    runs-on: macos-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖 (npm ci)
+        run: npm ci
+
+      - name: 构建 web (vite build)
+        run: npm run build
+
+      # build.sh 自己的第 1 步会再跑一次 npm run build（脚本是自洽的）。
+      # 这里多跑一次是为了让「web 构建失败」和「Swift 打包失败」在日志里分得开。
+      - name: 打包 .app (macos/build.sh)
+        run: bash macos/build.sh
+
+      - name: 断言产物存在 (macos/.build/LifeCanvas.app)
+        run: |
+          set -euo pipefail
+          APP="macos/.build/LifeCanvas.app"
+          if [ ! -d "$APP" ]; then
+            echo "::error::没有产出 $APP —— build.sh 声称成功但目录不存在"
+            ls -la macos/.build 2>/dev/null || echo "(macos/.build 整个都没有)"
+            exit 1
+          fi
+          if [ ! -x "$APP/Contents/MacOS/LifeCanvas" ]; then
+            echo "::error::$APP/Contents/MacOS/LifeCanvas 不可执行"
+            exit 1
+          fi
+          echo "OK：$APP"
+
+      # ── 原生自测 ──────────────────────────────────────────────────────
+      # ⚠️ 三件事必须先知道，否则这个 step 会给出误导性的结果：
+      #
+      # ① **退出码永远是 0**。macos/LifeCanvas/AppDelegate.swift 里自测跑完的
+      #    回调是 `print(report); exit(0)` —— 断言挂了也照样 exit 0。
+      #    所以「断言过没过」只能从报告文本里读，看 $? 是没用的。
+      #
+      # ② **它需要 GUI**。自测要开一个真 NSWindow、用 WKWebView 跑真实交互
+      #    （点按钮、拖分隔条、读画布像素）。CI runner 没有物理屏幕，
+      #    窗口尺寸 / 字体度量跟本地不一样 → 跟布局有关的断言（三列宽度、
+      #    画布 CSS 尺寸）反映的是**跑测环境**，不等于产品坏了。
+      #
+      # ③ **它会动真数据**。自测跑在 app 自己的容器（IndexedDB）上，其中
+      #    nativeResetCanvas 那一步会真的发 reset 清画布。
+      #    CI runner 是一次性的、容器是空的 → 无所谓；**本地跑请先备份**。
+      #
+      # 取舍：**崩了 / 卡死 / 没出报告 = 硬失败**（说明打好的 app 连启动都
+      # 做不到，这值得挡住）；**断言失败 = 只告警**，把失败条目原样打出来，
+      # 不让 CI 变红。想让断言也挡门，把下面解析步骤里的 warning 改成 error。
+      - name: 原生自测 (--selftest)
+        # 6 分钟上限：自测正常跑完是几十秒量级；卡死时由 runner 杀掉整个
+        # 进程组（step 级 timeout 会连后台子进程一起收掉，不会留孤儿进程）。
+        timeout-minutes: 6
+        run: |
+          set -uo pipefail
+          APP="macos/.build/LifeCanvas.app/Contents/MacOS/LifeCanvas"
+          LOG="macos/.build/selftest.log"
+
+          set +e
+          "$APP" --selftest > "$LOG" 2>&1
+          RC=$?
+          set -e
+
+          cat "$LOG" || true
+          echo "自测进程退出码：$RC"
+
+          if [ "$RC" -ne 0 ]; then
+            echo "::error::原生自测进程异常退出（exit=$RC）"
+            exit 1
+          fi
+
+      - name: 解析自测报告（断言失败只告警，不阻断）
+        if: always()
+        run: |
+          set -uo pipefail
+          LOG="macos/.build/selftest.log"
+          if [ ! -f "$LOG" ]; then
+            echo "::error::自测没有日志 —— 进程没起来"
+            exit 1
+          fi
+
+          PASS=$(grep -c '^PASS  ' "$LOG" || true)
+          FAIL=$(grep -c '^FAIL  ' "$LOG" || true)
+          SKIP=$(grep -c '^SKIP  ' "$LOG" || true)
+
+          # 收尾行（==> 全部通过 / ==> N 条失败）才是「自测真的跑完了」的证据。
+          if ! grep -q '^==> ' "$LOG"; then
+            echo "::error::没拿到自测报告 —— 进程没跑到收尾就结束了"
+            exit 1
+          fi
+
+          echo "断言统计：通过 ${PASS} 条 / 失败 ${FAIL} 条 / 跳过 ${SKIP} 条"
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::warning::原生自测有 ${FAIL} 条断言失败 —— CI 不阻断（理由见本 workflow 注释）"
+            grep -A 1 '^FAIL  ' "$LOG" || true
+          fi

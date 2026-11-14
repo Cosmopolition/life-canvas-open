@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>人生画布</string>
+    <key>CFBundleDisplayName</key>
+    <string>人生画布</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.fateplay.lifecanvas</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <!-- 界面有中英两套（见 macos/LifeCanvas/L10n.swift）。
+         声明这两个 localization，macOS 的「每个 App 单独设语言」才认这个 App ——
+         没声明的话，用户在系统设置里给这个 App 单独设语言是白设。 -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh-Hans</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>zh-Hans</string>
+        <string>en</string>
+    </array>
+    <key>CFBundleExecutable</key>
+    <string>LifeCanvas</string>
+    <!-- 应用图标：来源见 macos/Icon/README.md（源图 + 合成脚本） -->
+    <key>CFBundleIconFile</key>
+    <string>LifeCanvas.icns</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <!-- 关闭 macOS 自动弹出的"帮助"按钮，跟我们 Help 菜单里手动那项重复 -->
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026</string>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+    <key>NSSupportsSuddenTermination</key>
+    <false/>
+</dict>
+</plist>
