@@ -1,0 +1,9 @@
+# macos/Icon 下的 Python 脚本依赖
+#
+# compose_icon.py / make_iconset.py / preview_sheet.py 都要 Pillow。
+#
+#   pip3 install -r requirements.txt
+#
+# 注意：这三个脚本**只在改图标时**才用得到。构建 App 本身
+# （macos/build.sh、macos/release.sh）完全不需要 Python，也不需要 Pillow。
+Pillow>=10.0

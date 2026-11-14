@@ -11,7 +11,7 @@
 #    ./macos/release.sh /path/to/dest.app   # 指定位置
 #
 #  可覆盖的环境变量：
-#    LIFE_CANVAS_BUNDLE_ID   bundle id（默认 com.fateplay.lifecanvas）
+#    LIFE_CANVAS_BUNDLE_ID   bundle id（默认 com.example.lifecanvas）
 #    LIFE_CANVAS_SIGN_NAME   签名身份（默认 Apple Development）
 #
 #  这条管线的自检项：
@@ -32,7 +32,13 @@ ROOT="$(pwd)"
 APP_NAME="人生画布"
 # bundle id 可以覆盖：换 id = 换沙盒容器 = **用户的数据会失联**（见
 # macos/LifeCanvas/README.md 的「换 bundle id 怎么迁数据」）。
-BUNDLE_ID="${LIFE_CANVAS_BUNDLE_ID:-com.fateplay.lifecanvas}"
+#
+# ⚠️ 默认值跟 macos/LifeCanvas/Info.plist 里的 CFBundleIdentifier **必须一致**：
+#    下面第 3 步会把 Info.plist 里的 id 改写成 $BUNDLE_ID，第 4.2 步再拿
+#    改写后的值跟 $BUNDLE_ID 对账 —— 两边不一致会在自检那里被挡住。
+#    公开仓用的是占位 id（com.example.lifecanvas）；发布成自己的产品时
+#    把这两个地方一起改掉。
+BUNDLE_ID="${LIFE_CANVAS_BUNDLE_ID:-com.example.lifecanvas}"
 EXE="LifeCanvas"
 MIN_OS="13.0"
 
@@ -121,6 +127,29 @@ cp "$TMP/$EXE"                 "$PAYLOAD/MacOS/$EXE"
 cp -R "$ROOT/dist"             "$PAYLOAD/Resources/dist"
 cp "$ROOT/macos/Icon/LifeCanvas.icns" "$PAYLOAD/Resources/LifeCanvas.icns"
 cp "$ROOT/macos/LifeCanvas/Info.plist" "$PAYLOAD/Info.plist"
+
+# ⚠️⚠️ bundle id 必须**写进** Info.plist，不能只活在环境变量里。
+#    源码里的 Info.plist 带的是默认 id；用 LIFE_CANVAS_BUNDLE_ID 覆盖时
+#    如果不回写文件，第 4.2 步的自检就会拿 plist 里的旧 id 跟 $BUNDLE_ID
+#    对账 → 判定「bundle id 不对」→ release.sh 直接退出。
+#    ⇒ 覆盖能力等于没有（实测：环境变量一覆盖就被卡住）。
+#
+#    用 perl -0777 做**文本**替换，不用 PlistBuddy / plutil：
+#    那两个都会重写整个 plist，把 Info.plist 里的中文注释（localization
+#    那段解释）全部丢掉 —— 替换完只剩 0 条注释。文本替换只动那一行。
+LC_BUNDLE_ID="$BUNDLE_ID" perl -0777 -i -pe \
+  's{(<key>CFBundleIdentifier</key>\s*<string>)[^<]*(</string>)}{$1 . $ENV{LC_BUNDLE_ID} . $2}e' \
+  "$PAYLOAD/Info.plist"
+
+# 回写没生效（比如以后有人改了 Info.plist 的键名）要当场报错，
+# 不能拖到第 4.2 步才用一个笼统的「bundle id 不对」把人引到别处去。
+PLIST_ID_NOW="$(plutil -extract CFBundleIdentifier raw "$PAYLOAD/Info.plist" 2>/dev/null || echo '')"
+if [ "$PLIST_ID_NOW" != "$BUNDLE_ID" ]; then
+  echo "  ❌ bundle id 回写失败：Info.plist 里是「${PLIST_ID_NOW:-<读不出来>}」，应为「$BUNDLE_ID」" >&2
+  echo "     检查 macos/LifeCanvas/Info.plist 里 CFBundleIdentifier 这个键还在不在" >&2
+  exit 1
+fi
+echo "  ✓ bundle id 已写入 Info.plist：$PLIST_ID_NOW"
 
 # ⚠️⚠️ **entitlements 文件不能放进 app bundle 里**
 #    codesign 会把 bundle 内每个文件都当成"子组件"要求它有签名，

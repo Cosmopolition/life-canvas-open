@@ -6,8 +6,13 @@
     <string>人生画布</string>
     <key>CFBundleDisplayName</key>
     <string>人生画布</string>
+    <!-- bundle id 是**沙盒容器**的名字：改它 = 换容器 = 已有数据失联。
+         公开仓里用的是占位 id com.example.lifecanvas（example.com 是保留域名，
+         不会跟任何真实开发者撞号）。要发布成自己的产品，改这一行，
+         同时改 macos/release.sh 里的同名默认值。
+         想临时换 id 试跑：LIFE_CANVAS_BUNDLE_ID=xxx ./macos/release.sh -->
     <key>CFBundleIdentifier</key>
-    <string>com.fateplay.lifecanvas</string>
+    <string>com.example.lifecanvas</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>

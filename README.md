@@ -76,6 +76,56 @@ open macos/.build/LifeCanvas.app
 
 ---
 
+## 开源说明
+
+### 这个仓里有什么、没有什么
+
+这是**桌面端**（macOS 原生壳 + web 前端）的完整源码，可以自己构建、自己跑。
+
+有几样东西**故意没有**进这个仓：
+
+| 没进仓的 | 为什么 |
+|---|---|
+| iOS 线 | 目前只开源桌面端 |
+| 商店元数据（截图 / 宣传图 / ASO 文案） | 发布相关产物随发布走，不进代码仓 |
+| 内部文档 / 商业计划 | 与代码运行无关 |
+| 图标的 AI 源图与出图提示词 | 见 [`macos/Icon/README.md`](macos/Icon/README.md)；图标有可完整复现的矢量路线 |
+
+> 公开仓的文件边界是**显式**的，可逐条核对：`git ls-files`。
+> 仓里的 `.export-manifest.txt` 是同一份清单的快照。
+
+### bundle id 是占位的
+
+`macos/LifeCanvas/Info.plist` 和 `macos/release.sh` 里用的都是
+`com.example.lifecanvas` —— `example.com` 是保留域名，不会跟任何真实开发者撞号。
+
+要换成自己的，**两处一起改**：
+
+```bash
+# 1) macos/LifeCanvas/Info.plist 里的 CFBundleIdentifier
+# 2) macos/release.sh 里的 BUNDLE_ID 默认值
+```
+
+只是临时换 id 试跑，不用改文件：
+
+```bash
+LIFE_CANVAS_BUNDLE_ID=com.yourcompany.lifecanvas ./macos/release.sh
+```
+
+> ⚠️ bundle id 就是**沙盒容器**的名字 —— 改 id = 换容器 = 老用户的数据失联。
+> 已经发过版的，请不要改，除非你准备带用户迁数据。
+
+### 改图标需要 Pillow
+
+构建 App **不需要** Python，也不需要 Pillow。只有
+[`macos/Icon/`](macos/Icon/README.md) 下的图标脚本要用：
+
+```bash
+pip3 install -r macos/Icon/requirements.txt
+```
+
+---
+
 ## 五个视图
 
 | 视图 | 回答的问题 | 截图 |

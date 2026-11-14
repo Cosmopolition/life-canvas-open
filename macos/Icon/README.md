@@ -34,7 +34,7 @@ macOS 应用图标。成品是 `LifeCanvas.icns`，由 `build.sh` 打进 `LifeCa
 ## 管线
 
 ```
-source/ai-H-threads.png   ← 图像模型出的 2048 稿（提示词见 prompts.md）
+source/ai-H-threads.png   ← 图像模型出的 2048 稿 ⚠️ 未随公开仓发布
         │
         │ compose_icon.py
         ▼
@@ -51,10 +51,37 @@ LifeCanvas.icns          ← 10 个尺寸，build.sh 直接打进 .app
 cd macos/Icon && ./make_icon.sh
 ```
 
-源图只留了采用的那一张（`source/ai-H-threads.png`）；其余方向的源图已删，
-但 `prompts.md` 里存着全部提示词，随时可以重新生成。
-`source/ai-H-threads.png` 存的是**裁掉外围空白后的版本**（主体像素未动，
-裁剪不改变合成结果——已用 SHA1 验证过 master 可复现）。
+### ⚠️ 公开仓里跑不通默认那条路（这是有意的，不是坏了）
+
+成品的「H · 主线」那张稿是**图像模型出的**，源图（`source/ai-H-threads.png`）
+和全部提示词（`prompts.md`）都留在了私有源仓里，**没有进公开仓** ——
+`preview/concept-*.png` 那批留档同理。
+
+所以 `./make_icon.sh` 不带参数直接跑，会停在「找不到源图」并把两条替代路
+打给你（脚本里那段提示就是给你看的）。仓库里**已经带了成品**
+`LifeCanvas.icns`，构建 App 不需要重新生成图标：
+
+```bash
+pip3 install -r requirements.txt   # compose_icon.py / make_iconset.py 要 Pillow
+```
+
+想改图标，两条路：
+
+| 路线 | 可复现？ | 说明 |
+|---|---|---|
+| **A · 矢量**（`icon.swift`） | ✅ 完全可复现，不依赖任何外部素材 | 纯 CoreGraphics 画。**目前只能出概念稿 A/B/C/D**（1=星图 2=阶段框 3=卡片 4=混合），出不来成品那张「H · 主线」 |
+| **B · AI 合成**（`compose_icon.py`） | ⚠️ 需要你自己带一张 2048 源图 | 合成管线跟成品同一条（抠棋盘格 + 套精确 squircle），但你换稿子，出来的图自然也不一样 |
+
+A 路线的完整命令：
+
+```bash
+swift icon.swift 2 preview/master-1024.png 1024
+python3 make_iconset.py preview/master-1024.png .build/LifeCanvas.iconset
+iconutil -c icns .build/LifeCanvas.iconset -o LifeCanvas.icns
+```
+
+> Pillow 只在**改图标**时才需要。构建 App 本身（`macos/build.sh` /
+> `macos/release.sh`）完全不需要 Python，也不需要 Pillow。
 
 ### compose_icon.py 在修什么
 
@@ -76,7 +103,11 @@ cd macos/Icon && ./make_icon.sh
 
 ### 出图提示词
 
-`prompts.md` 里存着全部 8 条提示词原文。共同结构是三段式：
+原始的 8 条出图提示词存在私有源仓的 `prompts.md` 里，**未随公开仓发布**。
+真要重走这条路，得自己写提示词生成一张 2048 稿，再喂给 `compose_icon.py`
+（它只管抠像 + 套 squircle，不关心稿子长什么样）。
+
+当初用的提示词是三段式，结构大致是这样（供重写时参考）：
 
 > Professional macOS app icon design, square canvas, straight-on flat front view, no mockup.
 > Icon shape is the modern macOS squircle … everything outside the squircle is fully transparent.
@@ -87,7 +118,7 @@ cd macos/Icon && ./make_icon.sh
 
 ## 其它概念
 
-`preview/concept-*.png` 是同批出的其它方向，留档备选：
+同批出的其它方向长这样（**概念留档图未随公开仓发布**，这里只有文字说明）：
 
 | | 概念 | 表达 | 问题 |
 |---|---|---|---|
@@ -99,6 +130,10 @@ cd macos/Icon && ./make_icon.sh
 | F | 阶段带 | 琥珀横带 + 穿带连线 | 粗得像进度条 |
 | G | 经纬 | 琥珀纵轴 + 彩色横线 | 容易读成十字准星 / 表格 |
 | **H** | **主线** | **琥珀主线穿出画框** | **← 采用** |
+
+A / B / C / D 四个概念稿，`icon.swift` 现在能直接矢量画出来
+（`swift icon.swift --all <outDir>` 会一次出全部 variant × 7 个尺寸）；
+E / F / G / H 只存在于那张 AI 源图里。
 
 `icon.swift` 是另一条独立的路：用 CoreGraphics 直接矢量画，
 好处是完全可控、不依赖任何模型输出，配色也直接来自 app 源码。
@@ -120,12 +155,14 @@ cd macos/Icon && ./make_icon.sh
 2. **查 LaunchServices 注册表里有没有悬空条目**：
 
    ```bash
+   # ⚠️ 这里的 bundle id 要跟你的 app **实际用的那个**一致 ——
+   #    公开仓的默认值是 com.example.lifecanvas，你改了 Info.plist 就得跟着改。
    LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
    $LSR -dump | python3 -c "
    import sys,re
    txt=sys.stdin.read()
    for b in txt.split('-'*80):
-   >   if 'com.lifecanvas.app' in b and 'bundle id:' in b:
+   >   if 'com.example.lifecanvas' in b and 'bundle id:' in b:
    >     m=re.search(r'^\s*path:\s+(.+?)\s+\(0x', b, re.M)
    >     if m: print(m.group(1))"
    ```

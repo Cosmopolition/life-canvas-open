@@ -10,7 +10,6 @@
     "test": "vitest run",
     "i18n": "tsx scripts/i18n-check.ts",
     "i18n:native": "tsx scripts/check-native-i18n.ts",
-    "i18n:slugs": "tsx tools/check-i18n-slugs.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

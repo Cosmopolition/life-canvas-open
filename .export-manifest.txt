@@ -32,6 +32,7 @@ macos/Icon/icon.swift
 macos/Icon/make_icon.sh
 macos/Icon/make_iconset.py
 macos/Icon/preview_sheet.py
+macos/Icon/requirements.txt
 macos/LifeCanvas/AppDelegate.swift
 macos/LifeCanvas/Bridge.swift
 macos/LifeCanvas/Info.plist

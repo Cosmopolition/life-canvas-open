@@ -84,6 +84,58 @@ For a signed universal build:
 
 ---
 
+## About this open-source release
+
+### What's in the repo, and what isn't
+
+This is the complete source of the **desktop app** (a native macOS shell around the web
+front end). You can build it and run it yourself.
+
+A few things are deliberately **not** in this repo:
+
+| Not included | Why |
+|---|---|
+| The iOS line | Only the desktop app is open-sourced |
+| Store metadata (screenshots / promo art / ASO copy) | Release artifacts travel with the release, not with the code |
+| Internal docs / business plans | Irrelevant to running the code |
+| The icon's AI source art and generation prompts | See [`macos/Icon/README.md`](macos/Icon/README.md); the icon has a fully reproducible vector route |
+
+> The file boundary of the public repo is **explicit** and can be checked line by line:
+> `git ls-files`. `.export-manifest.txt` in this repo is a snapshot of the same list.
+
+### The bundle id is a placeholder
+
+Both `macos/LifeCanvas/Info.plist` and `macos/release.sh` use `com.example.lifecanvas` —
+`example.com` is a reserved domain, so it can't collide with a real developer.
+
+To use your own, change **both** places:
+
+```bash
+# 1) CFBundleIdentifier in macos/LifeCanvas/Info.plist
+# 2) the BUNDLE_ID default in macos/release.sh
+```
+
+To try a different id without editing any file:
+
+```bash
+LIFE_CANVAS_BUNDLE_ID=com.yourcompany.lifecanvas ./macos/release.sh
+```
+
+> ⚠️ The bundle id **is** the sandbox container name — changing it means a new container,
+> which means existing users lose access to their data. Don't change it once you've shipped,
+> unless you're prepared to migrate people over.
+
+### Changing the icon needs Pillow
+
+Building the app needs **neither** Python nor Pillow. Only the icon scripts under
+[`macos/Icon/`](macos/Icon/README.md) do:
+
+```bash
+pip3 install -r macos/Icon/requirements.txt
+```
+
+---
+
 ## The five views
 
 | View | The question it answers | Screenshot |
