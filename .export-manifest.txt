@@ -21,6 +21,8 @@ docs/images/canvas.png
 docs/images/list.png
 docs/images/macos-window.png
 docs/images/timeline.png
+docs/images/today.png
+docs/images/week-calendar.png
 docs/macos-shell.md
 e2e.cjs
 eslint.config.js

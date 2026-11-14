@@ -143,8 +143,18 @@ pip3 install -r macos/Icon/requirements.txt
 | **Canvas** | What does the structure look like? | [canvas](docs/images/canvas.png) |
 | **Timeline** | What came first, what replaced what? | [timeline](docs/images/timeline.png) |
 | **List** | The inventory (searchable, filterable) | [list](docs/images/list.png) |
-| **Today** | What is on for today (morning intent + evening review + soft plans) | |
-| **Week calendar** | Week by week; click into any week for its own canvas | |
+| **Today** | What is on for today (morning intent + evening review + soft plans) | [today](docs/images/today.png) |
+| **Week calendar** | Week by week; click into any week for its own canvas | [week](docs/images/week-calendar.png) |
+
+**Today** lays a single day out in three slots: one line of morning intent, one line of
+evening review, and any number of "soft plans" alongside.
+
+![The today view](docs/images/today.png)
+
+**Week calendar** is one row per week — click into it for that week's own canvas. Weeks
+you've already reviewed are marked.
+
+![The week calendar view](docs/images/week-calendar.png)
 
 The **week canvas** can pull in **copies** of that week's records from the main canvas — the
 originals stay put, the copies are yours to change, and each copy remembers where it came

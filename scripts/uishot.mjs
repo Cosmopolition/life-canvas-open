@@ -7,9 +7,10 @@
 // 有没有数据、有没有跨过首启门禁 —— 正好是审 UI 需要的那几个自由度。
 //
 // 用法：
-//   node scripts/uishot.mjs [url] [outDir] [locale]
+//   node scripts/uishot.mjs [url] [outDir] [locale] [theme]
 //   node scripts/uishot.mjs http://127.0.0.1:4173/ shots/ui
 //   node scripts/uishot.mjs http://127.0.0.1:4173/ shots/ui-en en-US
+//   node scripts/uishot.mjs http://127.0.0.1:4173/ shots/ui-dark '' dark
 //
 // 产物：outDir/<name>.png（deviceScaleFactor=2，Retina 清晰度）
 
@@ -23,6 +24,17 @@ const URL_ = process.argv[2] || 'http://127.0.0.1:4173/';
 const OUT = process.argv[3] || 'shots/ui';
 // 界面语言（可选）：zh-CN / en-US。不给就跟随浏览器（无头 Chromium 是 en-US）。
 const LOCALE = process.argv[4] || '';
+// 主题（可选）：dark / light。默认 dark。
+//
+// ★ 为什么默认是 dark，而不是「跟随系统」：
+//   应用的主题跟着 prefers-color-scheme 走（src/persist/db.ts 的 systemTheme），
+//   而**无头 Chromium 默认是 light** —— 产物深浅色取决于跑截图那台机器的
+//   系统外观，不是脚本决定的。已经踩过：同一个脚本在两台机器上跑出来
+//   一套深一套浅，README 里的图就对不上了。
+//   而且脚本末尾本来就有专门拍浅色主题的场景（light-canvas / light-list），
+//   说明「默认深色、浅色单独拍」本来就是设计意图。
+//   → 显式指定，产物才可复现。
+const THEME = (process.argv[5] || 'dark').toLowerCase();
 const PORT = 9333 + (process.pid % 400);
 
 // ── 找 Chromium ─────────────────────────────────────────────────────────
@@ -115,6 +127,17 @@ await S('Runtime.enable');
 if (LOCALE) {
   await S('Page.addScriptToEvaluateOnNewDocument', {
     source: `try { localStorage.setItem('lc.locale', ${JSON.stringify(LOCALE)}); } catch (e) {}`,
+  });
+}
+
+// ★ 主题同理，要在 boot 之前定下来。
+//   应用的深浅色跟着 prefers-color-scheme 走（默认设置是 auto）。
+//   模拟成 dark 之后，matchMedia('(prefers-color-scheme: light)') 不再命中，
+//   应用 boot 起来就是深色 —— 不用等 change 事件回流。
+if (THEME === 'dark' || THEME === 'light') {
+  await S('Emulation.setEmulatedMedia', {
+    media: 'screen',
+    features: [{ name: 'prefers-color-scheme', value: THEME }],
   });
 }
 

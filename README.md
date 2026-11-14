@@ -133,8 +133,16 @@ pip3 install -r macos/Icon/requirements.txt
 | **画布** | 结构长什么样 | [canvas](docs/images/canvas.png) |
 | **时间轴** | 先后与取代链 | [timeline](docs/images/timeline.png) |
 | **列表** | 清单（可搜索、可筛） | [list](docs/images/list.png) |
-| **今日** | 当天要做什么（早间意图 + 晚间复盘 + 软安排） | |
-| **周历** | 一周一周地回看；点进任意一周是一块独立画布 | |
+| **今日** | 当天要做什么（早间意图 + 晚间复盘 + 软安排） | [today](docs/images/today.png) |
+| **周历** | 一周一周地回看；点进任意一周是一块独立画布 | [week](docs/images/week-calendar.png) |
+
+**今日**把一天摊开成三个时段：早间写一句意图、晚间写一句复盘，再加若干「软安排」。
+
+![今日视图](docs/images/today.png)
+
+**周历**一周一行，点进去是那一周自己的画布；做过复盘的那一周会标出来。
+
+![周历视图](docs/images/week-calendar.png)
 
 **周画布**可以把主画布这一周的记录**复制**进来 —— 原件留在主画布，副本可以随便改，
 副本记得来源、能一键跳回原件。挑几个点还能排成 1080×1440 的竖版 PNG（复盘卡片）。
