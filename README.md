@@ -115,6 +115,16 @@ LIFE_CANVAS_BUNDLE_ID=com.yourcompany.lifecanvas ./macos/release.sh
 > ⚠️ bundle id 就是**沙盒容器**的名字 —— 改 id = 换容器 = 老用户的数据失联。
 > 已经发过版的，请不要改，除非你准备带用户迁数据。
 
+### 签名里会有你的名字
+
+`release.sh` 用**本机钥匙串**里的证书签名，签出来的 .app 里会嵌签名者的姓名和
+Team ID（代码签名就是这么工作的，Gatekeeper 的「显示简介」里显示的就是它）。
+**私钥不会离开钥匙串** —— 仓库里也没有任何证书文件（.p12 / .pem / provisioning
+profile 一个都没有），证书是构建时用 `security find-identity` 从钥匙串现读的。
+
+不想让名字出现在产物里，用 `build.sh`（ad-hoc 签名，不带任何身份），
+或者在没有开发证书的机器上跑 `release.sh`（它会自动退回 ad-hoc）。
+
 ### 改图标需要 Pillow
 
 构建 App **不需要** Python，也不需要 Pillow。只有

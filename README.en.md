@@ -125,6 +125,19 @@ LIFE_CANVAS_BUNDLE_ID=com.yourcompany.lifecanvas ./macos/release.sh
 > which means existing users lose access to their data. Don't change it once you've shipped,
 > unless you're prepared to migrate people over.
 
+### Your name ends up in the signature
+
+`release.sh` signs with the certificate in **your own keychain**, and the resulting
+.app embeds the signer's name and Team ID — that's how code signing works, and it's
+what Gatekeeper's "Show Details" displays. **The private key never leaves the
+keychain**: the repo contains no certificate files at all (no .p12, no .pem, no
+provisioning profile) — the certificate is read from the keychain at build time with
+`security find-identity`.
+
+To keep your name out of the artifact, use `build.sh` (ad-hoc signed, no identity at
+all), or run `release.sh` on a machine with no development certificate (it falls back
+to ad-hoc on its own).
+
 ### Changing the icon needs Pillow
 
 Building the app needs **neither** Python nor Pillow. Only the icon scripts under
