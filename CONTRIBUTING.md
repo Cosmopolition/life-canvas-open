@@ -45,12 +45,13 @@ LIFECANVAS_DIST="$PWD/dist" ./macos/.build/LifeCanvas-dev
 
 ---
 
-## 提交前必须过的三道关
+## 提交前必须过的四道关
 
 ```bash
 npm run typecheck        # tsc --noEmit，必须无错
 npm test                 # vitest，全绿（366 条）
 npm run i18n             # 文案表体检：英文表不能有漏翻、占位符要对得上
+npm run scan:secrets     # 密钥 / 证书扫描：私钥、API key、证书文件
 ```
 
 另外两条也建议跑（CI 会跑）：
@@ -69,6 +70,29 @@ npm run i18n:native      # 核对原生壳与 web 侧共用的文案键逐字一
 > ⚠️ 自测跑在**真实容器**上（你机器上那个 app 的沙盒目录），
 > 它会临时改设置（界面语言、侧栏宽度），**跑完会自动还原**。
 > 别在别人的机器上乱跑。
+
+### 密钥扫描为什么是硬门
+
+这个仓是**公开**的。密钥一旦提交进 git，删文件是不够的 —— 历史里还留着，
+抓取机器人几小时内就会扫到。所以扫描是**挡人**的，不是提醒的。
+
+- **源码**由 CI 的 `web` job 扫（`npm run scan:secrets`），在装依赖**之前**跑，
+  泄了早失败。
+- **产物**由 `macos` job 扫打好的 `LifeCanvas.app`（`npm run scan:secrets:app`）；
+  `macos/release.sh` 自己在**签名前**也扫一遍 —— 密钥进了 bundle 再签上名，
+  等于盖了章认证「这是我发的」，比裸奔更危险。
+
+扫的是：私钥（PEM / OpenSSH / PGP）、证书文件、已知厂商的 API key / token、
+硬编码的凭据赋值。
+
+**不会误报**签名者身份 —— 代码签名里嵌的是证书的**公开**部分（DER，不是 PEM），
+那是机制决定的，不该拦。
+
+真泄了：**先去对应服务吊销 / 轮换那个凭据**，再改代码。删文件不够。
+
+确实是误报：在 [`scripts/secret-scan-allow.txt`](scripts/secret-scan-allow.txt)
+里登记一行，格式是 `<路径 glob> :: <规则 id> :: <理由>`，**理由必填** ——
+例外清单本身进仓库，审的人看得见。能修规则就别开例外。
 
 ---
 

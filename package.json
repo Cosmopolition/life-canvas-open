@@ -11,6 +11,8 @@
     "i18n": "tsx scripts/i18n-check.ts",
     "i18n:native": "tsx scripts/check-native-i18n.ts",
     "lint": "eslint .",
+    "scan:secrets": "node scripts/scan-secrets.mjs --skip 'macos/.build/**' .",
+    "scan:secrets:app": "node scripts/scan-secrets.mjs macos/.build/LifeCanvas.app",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "seed": "tsx scripts/seed.ts"

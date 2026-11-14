@@ -59,7 +59,9 @@ scripts/edge-check.mjs
 scripts/i18n-check.ts
 scripts/reset-check.mjs
 scripts/reset-shot.mjs
+scripts/scan-secrets.mjs
 scripts/seed.ts
+scripts/secret-scan-allow.txt
 scripts/uishot.mjs
 src/app.ts
 src/app/selftest-hooks.ts

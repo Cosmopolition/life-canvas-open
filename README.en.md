@@ -234,14 +234,24 @@ npm test            # 366 unit tests
 npm run lint        # eslint
 npm run i18n        # string table health check
 npm run i18n:native # native shell vs web — shared keys must match verbatim
+npm run scan:secrets # secret / certificate scan
 npm run build       # build
 ```
 
-The three gates every push must pass (CI runs the same):
+The four gates every push must pass (CI runs the same):
 
 ```bash
-npm run typecheck && npm test && npm run i18n
+npm run typecheck && npm test && npm run i18n && npm run scan:secrets
 ```
+
+> **The secret scan is a hard gate.** This repo is public, and once a key is committed,
+> deleting the file isn't enough — it stays in the history and scraper bots find it within
+> hours. It looks for private keys (PEM / OpenSSH / PGP), certificate files, known-vendor API
+> keys and tokens, and hard-coded credential assignments. It does **not** false-positive on
+> the signer's identity embedded in a code signature (that's the certificate's *public*
+> side). If you really did leak one, revoke/rotate it at the provider first — don't just
+> delete the file. False positives get registered in
+> [`scripts/secret-scan-allow.txt`](scripts/secret-scan-allow.txt), and a reason is required.
 
 Helper scripts:
 

@@ -212,14 +212,22 @@ npm test            # 366 条单元测试
 npm run lint        # eslint
 npm run i18n        # 文案表体检：漏翻 / 占位符 / 中文键残留
 npm run i18n:native # 核对原生壳与 web 侧共用的文案键逐字一致
+npm run scan:secrets # 密钥 / 证书扫描
 npm run build       # 构建
 ```
 
-提交前必须过的三道关（CI 也跑这几条）：
+提交前必须过的四道关（CI 也跑这几条）：
 
 ```bash
-npm run typecheck && npm test && npm run i18n
+npm run typecheck && npm test && npm run i18n && npm run scan:secrets
 ```
+
+> **密钥扫描是硬门。** 这个仓是公开的，密钥一旦提交进 git，删文件是不够的
+> —— 历史里还留着，抓取机器人几小时内就会扫到。
+> 扫的是私钥（PEM / OpenSSH / PGP）、证书文件、已知厂商的 API key / token、
+> 硬编码的凭据赋值；**不会**误报代码签名里嵌的签名者身份（那是证书的公开部分）。
+> 真泄了先去对应服务吊销 / 轮换，别只是删文件。
+> 误报登记在 [`scripts/secret-scan-allow.txt`](scripts/secret-scan-allow.txt)，理由必填。
 
 其它辅助脚本：
 
